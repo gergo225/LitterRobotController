@@ -11,10 +11,21 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 
+#define PIN_IN1  19 // ESP32 pin GPIO19 connected to the IN1 pin L298N
+#define PIN_IN2  18 // ESP32 pin GPIO18 connected to the IN2 pin L298N
+#define PIN_ENA  17 // ESP32 pin GPIO17 connected to the EN1 pin L298N
+#define MAX_SPEED 255
+
+enum MotorState {
+  STOPPED,
+  ROTATE_LEFT,
+  ROTATE_RIGHT
+};
+
+MotorState motorState = STOPPED;
+
 //BLE server name
 #define bleServerName "Litter Robot Motor"
-
-bool deviceConnected = false;
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
@@ -35,18 +46,36 @@ class MyServerCallbacks: public BLEServerCallbacks {
   }
 };
 
+// Setup callback onWrite (value from client)
 class MotorCharacteristicsCallbacks: public BLECharacteristicCallbacks {
 	void onWrite(BLECharacteristic* pCharacteristic, esp_ble_gatts_cb_param_t* param) {
     const String value = pCharacteristic->getValue().c_str();
 
     Serial.print("Got value from client: ");
     Serial.println(value);
+    updateMotorStateUsingString(value);
+  }
+
+  void updateMotorStateUsingString(String stateString) {
+    stateString.toLowerCase();
+    if (stateString == "stop") {
+      motorState = STOPPED;
+    } else if (stateString == "left") {
+      motorState = ROTATE_LEFT;
+    } else if (stateString == "right") {
+      motorState = ROTATE_RIGHT;
+    }
   }
 };
 
 void setup() {
   // Start serial communication 
   Serial.begin(9600);
+
+  // initialize digital pins as outputs.
+  pinMode(PIN_IN1, OUTPUT);
+  pinMode(PIN_IN2, OUTPUT);
+  pinMode(PIN_ENA, OUTPUT);
 
   // Create the BLE Device
   BLEDevice::init(bleServerName);
@@ -75,4 +104,26 @@ void setup() {
 }
 
 void loop() {
+  // TODO: extract motor functionality in separate functions
+  // TODO: update only when necessary (when state changes)
+  switch (motorState) {
+    case STOPPED:
+      Serial.println("Motor: stop");
+      digitalWrite(PIN_ENA, 0);
+      digitalWrite(PIN_IN1, LOW);
+      digitalWrite(PIN_IN2, LOW);
+      break;
+    case ROTATE_LEFT:
+      Serial.println("Motor: rotate left (anti-clockwise)");
+      analogWrite(PIN_ENA, MAX_SPEED);
+      digitalWrite(PIN_IN1, LOW);
+      digitalWrite(PIN_IN2, HIGH);
+      break;
+    case ROTATE_RIGHT:
+      Serial.println("Motor: rotate right (clockwise)");
+      analogWrite(PIN_ENA, MAX_SPEED);
+      digitalWrite(PIN_IN1, HIGH);
+      digitalWrite(PIN_IN2, LOW);
+      break;
+  }
 }
