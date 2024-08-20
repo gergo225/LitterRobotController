@@ -69,6 +69,27 @@ class MotorCharacteristicsCallbacks: public BLECharacteristicCallbacks {
   }
 };
 
+void stopMotor() {
+  Serial.println("Motor: stop");
+  digitalWrite(PIN_ENA, 0);
+  digitalWrite(PIN_IN1, LOW);
+  digitalWrite(PIN_IN2, LOW);
+}
+
+void rotateMotorLeft() {
+  Serial.println("Motor: rotate left (anti-clockwise)");
+  analogWrite(PIN_ENA, MAX_SPEED);
+  digitalWrite(PIN_IN1, LOW);
+  digitalWrite(PIN_IN2, HIGH);
+}
+
+void rotateMotorRight() {
+  Serial.println("Motor: rotate right (clockwise)");
+  analogWrite(PIN_ENA, MAX_SPEED);
+  digitalWrite(PIN_IN1, HIGH);
+  digitalWrite(PIN_IN2, LOW);
+}
+
 void processMotorState() {
   if (motorState != previousMotorState) {
     previousMotorState = motorState;
@@ -78,22 +99,13 @@ void processMotorState() {
 
   switch (motorState) {
     case STOPPED:
-      Serial.println("Motor: stop");
-      digitalWrite(PIN_ENA, 0);
-      digitalWrite(PIN_IN1, LOW);
-      digitalWrite(PIN_IN2, LOW);
+      stopMotor();
       break;
     case ROTATE_LEFT:
-      Serial.println("Motor: rotate left (anti-clockwise)");
-      analogWrite(PIN_ENA, MAX_SPEED);
-      digitalWrite(PIN_IN1, LOW);
-      digitalWrite(PIN_IN2, HIGH);
+      rotateMotorLeft();
       break;
     case ROTATE_RIGHT:
-      Serial.println("Motor: rotate right (clockwise)");
-      analogWrite(PIN_ENA, MAX_SPEED);
-      digitalWrite(PIN_IN1, HIGH);
-      digitalWrite(PIN_IN2, LOW);
+      rotateMotorRight();
       break;
   }
 }
