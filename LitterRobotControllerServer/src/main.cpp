@@ -23,6 +23,7 @@ enum MotorState {
 };
 
 MotorState motorState = STOPPED;
+MotorState previousMotorState = STOPPED;
 
 //BLE server name
 #define bleServerName "Litter Robot Motor"
@@ -68,6 +69,35 @@ class MotorCharacteristicsCallbacks: public BLECharacteristicCallbacks {
   }
 };
 
+void processMotorState() {
+  if (motorState != previousMotorState) {
+    previousMotorState = motorState;
+  } else {
+    return;
+  }
+
+  switch (motorState) {
+    case STOPPED:
+      Serial.println("Motor: stop");
+      digitalWrite(PIN_ENA, 0);
+      digitalWrite(PIN_IN1, LOW);
+      digitalWrite(PIN_IN2, LOW);
+      break;
+    case ROTATE_LEFT:
+      Serial.println("Motor: rotate left (anti-clockwise)");
+      analogWrite(PIN_ENA, MAX_SPEED);
+      digitalWrite(PIN_IN1, LOW);
+      digitalWrite(PIN_IN2, HIGH);
+      break;
+    case ROTATE_RIGHT:
+      Serial.println("Motor: rotate right (clockwise)");
+      analogWrite(PIN_ENA, MAX_SPEED);
+      digitalWrite(PIN_IN1, HIGH);
+      digitalWrite(PIN_IN2, LOW);
+      break;
+  }
+}
+
 void setup() {
   // Start serial communication 
   Serial.begin(9600);
@@ -104,26 +134,6 @@ void setup() {
 }
 
 void loop() {
-  // TODO: extract motor functionality in separate functions
-  // TODO: update only when necessary (when state changes)
-  switch (motorState) {
-    case STOPPED:
-      Serial.println("Motor: stop");
-      digitalWrite(PIN_ENA, 0);
-      digitalWrite(PIN_IN1, LOW);
-      digitalWrite(PIN_IN2, LOW);
-      break;
-    case ROTATE_LEFT:
-      Serial.println("Motor: rotate left (anti-clockwise)");
-      analogWrite(PIN_ENA, MAX_SPEED);
-      digitalWrite(PIN_IN1, LOW);
-      digitalWrite(PIN_IN2, HIGH);
-      break;
-    case ROTATE_RIGHT:
-      Serial.println("Motor: rotate right (clockwise)");
-      analogWrite(PIN_ENA, MAX_SPEED);
-      digitalWrite(PIN_IN1, HIGH);
-      digitalWrite(PIN_IN2, LOW);
-      break;
-  }
+  processMotorState();
+  delay(100);
 }
