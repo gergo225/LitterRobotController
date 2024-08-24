@@ -1,27 +1,39 @@
 package com.gergo225.litterrobotcontroller
 
+import android.annotation.SuppressLint
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+@SuppressLint("MissingPermission")
 @Composable
 fun MainView(viewModel: MainViewModel = viewModel()) {
     val context = LocalContext.current
 
-    var allPermissionGranted by remember {
-        mutableStateOf(haveAllBlePermissions(context))
+    val permissionsGranted by viewModel.permissionsGranted.collectAsState()
+
+    LaunchedEffect(viewModel) {
+        viewModel.initialize(haveAllBlePermissions(context))
     }
 
-    if (!allPermissionGranted) {
-        PermissionsRequiredScreen { allPermissionGranted = true }
-    } else {
-        Text("Permissions granted")
+    when (permissionsGranted) {
+        false -> {
+            PermissionsRequiredPage { viewModel.onPermissionsGranted() }
+        }
+
+        true -> {
+            ScanPage()
+        }
+
+        else -> {
+            CircularProgressIndicator()
+        }
     }
 }
 
