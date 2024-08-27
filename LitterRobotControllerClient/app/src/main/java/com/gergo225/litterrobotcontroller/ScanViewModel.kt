@@ -86,16 +86,16 @@ class ScanViewModel(private val application: Application) : AndroidViewModel(app
 
     @RequiresPermission(BluetoothPermissions.BLUETOOTH_SCAN)
     fun initialize(bluetoothManager: BluetoothManager?) {
-        scanner = bluetoothManager?.adapter?.bluetoothLeScanner
         if (bluetoothManager?.adapter?.isEnabled == false) {
             _scanState.value = ScanState.ENABLE_BLUETOOTH
         } else {
-            startScanning()
+            onBluetoothEnabled(bluetoothManager)
         }
     }
 
     @RequiresPermission(BluetoothPermissions.BLUETOOTH_SCAN)
-    fun onBluetoothEnabled() {
+    fun onBluetoothEnabled(bluetoothManager: BluetoothManager?) {
+        scanner = bluetoothManager?.adapter?.bluetoothLeScanner
         startScanning()
     }
 

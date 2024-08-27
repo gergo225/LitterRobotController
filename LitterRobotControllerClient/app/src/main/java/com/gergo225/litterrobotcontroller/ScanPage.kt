@@ -36,7 +36,8 @@ fun ScanPage(viewModel: ScanViewModel = viewModel()) {
     val enableBluetoothLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { activityResult ->
             if (activityResult.resultCode != Activity.RESULT_OK) { return@rememberLauncherForActivityResult }
-            viewModel.onBluetoothEnabled()
+            val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+            viewModel.onBluetoothEnabled(bluetoothManager)
         }
     fun enableBluetooth() {
         val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
