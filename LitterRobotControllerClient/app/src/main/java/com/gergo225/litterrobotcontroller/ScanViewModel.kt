@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 enum class ScanState {
+    ENABLE_BLUETOOTH,
     SCANNING,
     CONNECTING,
     CONNECTED
@@ -28,7 +29,7 @@ class ScanViewModel(private val application: Application) : AndroidViewModel(app
     private var bluetoothDevice: BluetoothDevice? = null
     private var connectedDevice: BluetoothGatt? = null
 
-    private val _scanState = MutableStateFlow(ScanState.SCANNING)
+    private val _scanState = MutableStateFlow<ScanState?>(null)
     val scanState = _scanState.asStateFlow()
 
     companion object {
@@ -86,6 +87,15 @@ class ScanViewModel(private val application: Application) : AndroidViewModel(app
     @RequiresPermission(BluetoothPermissions.BLUETOOTH_SCAN)
     fun initialize(bluetoothManager: BluetoothManager?) {
         scanner = bluetoothManager?.adapter?.bluetoothLeScanner
+        if (bluetoothManager?.adapter?.isEnabled == false) {
+            _scanState.value = ScanState.ENABLE_BLUETOOTH
+        } else {
+            startScanning()
+        }
+    }
+
+    @RequiresPermission(BluetoothPermissions.BLUETOOTH_SCAN)
+    fun onBluetoothEnabled() {
         startScanning()
     }
 

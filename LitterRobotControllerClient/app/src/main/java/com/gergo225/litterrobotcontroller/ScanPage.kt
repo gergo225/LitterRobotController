@@ -1,16 +1,18 @@
 package com.gergo225.litterrobotcontroller
 
+import android.app.Activity
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,13 +33,23 @@ fun ScanPage(viewModel: ScanViewModel = viewModel()) {
 
     val scanState by viewModel.scanState.collectAsState()
 
+    val enableBluetoothLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { activityResult ->
+            if (activityResult.resultCode != Activity.RESULT_OK) { return@rememberLauncherForActivityResult }
+            viewModel.onBluetoothEnabled()
+        }
+    fun enableBluetooth() {
+        val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+        enableBluetoothLauncher.launch(enableBluetoothIntent)
+    }
+
     LaunchedEffect(viewModel) {
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         viewModel.initialize(bluetoothManager)
     }
 
-
     when (scanState) {
+        ScanState.ENABLE_BLUETOOTH -> { enableBluetooth() }
         ScanState.SCANNING -> ScanInProgressScreen()
         ScanState.CONNECTING -> ConnectingToDeviceScreen()
         ScanState.CONNECTED -> ConnectedToDeviceScreen(
@@ -45,6 +57,7 @@ fun ScanPage(viewModel: ScanViewModel = viewModel()) {
             onRotateLeft = { viewModel.rotateLeft() },
             onStop = { viewModel.stopMotor() }
         )
+        null -> { Text("\uD83D\uDCA9") /* Poop emoji */ }
     }
 }
 
