@@ -166,11 +166,10 @@ void processRotaryEncoderChange() {
     bool isClockwise = encoderChange > 0;
 
     if (motorState == STOPPED) {
-      Serial.println("Rotary knob: changing motor state");
       if (isClockwise) {
-        Serial.println("Rotary knob: clockwise");
+        Serial.println("Rotary knob: changing motor state (clockwise)");
       } else {
-        Serial.println("Rotary knob: anti-clockwise");
+        Serial.println("Rotary knob: changing motor state (anti-clockwise)");
       }
 
       motorState = isClockwise ? ROTATE_RIGHT : ROTATE_LEFT;
@@ -179,7 +178,7 @@ void processRotaryEncoderChange() {
     }
   }
 
-  if (rotaryEncoder.isEncoderButtonClicked()) {
+  if (rotaryEncoder.isEncoderButtonClicked() && motorState != STOPPED) {
     Serial.println("Rotary knob: click (stopping motor)");
     motorState = STOPPED;
   }
