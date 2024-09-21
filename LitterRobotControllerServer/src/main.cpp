@@ -10,11 +10,19 @@
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
+#include "AiEsp32RotaryEncoder.h"
 
 #define PIN_IN1  19 // ESP32 pin GPIO19 connected to the IN1 pin L298N
 #define PIN_IN2  18 // ESP32 pin GPIO18 connected to the IN2 pin L298N
 #define PIN_ENA  17 // ESP32 pin GPIO17 connected to the EN1 pin L298N
 #define MAX_SPEED 255
+
+#define ROTARY_ENCODER_CLK 25   // ESP32 pin GPIO4 connected to the CLK pin on the KY-040 rotary encoder
+#define ROTARY_ENCODER_DT 26    // ESP32 pin GPIO2 connected to the DT pin on the KY-040 rotary encoder
+#define ROTARY_ENCODER_SW 27    // ESP32 pin GPIO15 connected to the SW pin on the KY-040 rotary encoder
+#define ROTARY_ENCODER_STEPS 2
+
+AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_DT, ROTARY_ENCODER_CLK, ROTARY_ENCODER_SW, -1, ROTARY_ENCODER_STEPS);
 
 enum MotorState {
   STOPPED,
@@ -91,11 +99,10 @@ void rotateMotorRight() {
 }
 
 void processMotorState() {
-  if (motorState != previousMotorState) {
-    previousMotorState = motorState;
-  } else {
+  if (motorState == previousMotorState) {
     return;
   }
+  previousMotorState = motorState;
 
   switch (motorState) {
     case STOPPED:
@@ -110,9 +117,46 @@ void processMotorState() {
   }
 }
 
+void IRAM_ATTR readEncoderISR() {
+  rotaryEncoder.readEncoder_ISR();
+}
+
+void setupRotaryEncoder() {
+  rotaryEncoder.begin();
+  rotaryEncoder.setup(readEncoderISR);
+  rotaryEncoder.disableAcceleration();
+}
+
+void processRotaryEncoderChange() {
+  int encoderChange = rotaryEncoder.encoderChanged();
+
+  if (encoderChange) {
+    bool isClockwise = encoderChange > 0;
+
+    if (motorState == STOPPED) {
+      Serial.println("Rotary knob: changing motor state");
+      if (isClockwise) {
+        Serial.println("Rotary knob: clockwise");
+      } else {
+        Serial.println("Rotary knob: anti-clockwise");
+      }
+
+      motorState = isClockwise ? ROTATE_RIGHT : ROTATE_LEFT;
+    } else {
+      Serial.println("Rotary knob: can't change motor state until it's 'STOPPED'");
+    }
+  }
+
+  if (rotaryEncoder.isEncoderButtonClicked()) {
+    motorState = STOPPED;
+  }
+}
+
 void setup() {
   // Start serial communication 
   Serial.begin(9600);
+
+  setupRotaryEncoder();
 
   // initialize digital pins as outputs.
   pinMode(PIN_IN1, OUTPUT);
@@ -146,6 +190,7 @@ void setup() {
 }
 
 void loop() {
+  processRotaryEncoderChange();
   processMotorState();
   delay(100);
 }
