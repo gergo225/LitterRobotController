@@ -195,5 +195,4 @@ void setup() {
 void loop() {
   processRotaryEncoderChange();
   processMotorState();
-  delay(100);
 }
